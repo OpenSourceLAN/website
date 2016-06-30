@@ -14,10 +14,10 @@ a Steam cache working. DNS overrides also require mainteance - occasionally
 the list of hostnames used for content distribution changes, and that means
 Steam clients will bypass your cache if you don't catch that.
 
-### How the Steam client discover its CDN
+### How the Steam client discovers its CDN
 
 The Steam client is configured with a number of Content Servers (CS) which
-it uses to bootstrap from. You can see the list in 
+it bootstraps from. You can see the list in 
 `%YourSteamDirectory%\config\config.vdf`, and look for the `CS` line. 
 Each of the addresses in this semicolon separated list can be used to
 bootstrap. 
@@ -29,7 +29,7 @@ The first number (53) is the download region ID, `Australia - VIC` in
 this example. The second number is the maximum number of servers to
 return.
 
-Here's the example respond:
+Here's an example response:
 
 ```
 
@@ -77,7 +77,7 @@ for each depot in the package. For example, if we were to download
 [Swordy](), it has [one depot](https://steamdb.info/sub/71407/depots/). 
 All data for a depot lives in a folder beginning with `/depot/381301`,
 where the number is the depot ID - Swordy's only one in this case. 
-The manifest can be found at `/depot/381301/manifest/571621603566489671/5`
+The current manifest can be found at `/depot/381301/manifest/571621603566489671/5`
 
 The manifest lists all of the files for the depot. For example, one file
 from the above Swordy depot is `/depot/381301/chunk/914fc04dc7b3330544afb6ecde72bdfad003eabb`.
