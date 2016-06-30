@@ -1,0 +1,126 @@
+---
+layout: post
+title: "A different way of implementing a Steam Cache"
+date: 2016-06-31 12:00
+comments: true
+categories: 
+---
+
+There are [a](https://github.com/bntjah/lancache/) [few](https://github.com/wolrah/lancache) [different](https://github.com/multiplay/lancache/) [implementations](https://github.com/ti-mo/ansible-lanparty) of the so called 'LAN Cache'. 
+All of these rely on DNS to have the Steam client connect to the cache. 
+
+While a DNS override is trivial to implement, it is not the only way to get
+a Steam cache working. DNS overrides also require mainteance - occasionally
+the list of hostnames used for content distribution changes, and that means
+Steam clients will bypass your cache if you don't catch that.
+
+### How the Steam client discover its CDN
+
+The Steam client is configured with a number of Content Servers (CS) which
+it uses to bootstrap from. You can see the list in 
+`%YourSteamDirectory%\config\config.vdf`, and look for the `CS` line. 
+Each of the addresses in this semicolon separated list can be used to
+bootstrap. 
+
+The first entry in my list is `103.10.125.136:80`. Before beginning a
+download, Steam will make a request to an address like this:
+`http://103.10.125.136:80/serverlist/53/2/`. This returns a server list.
+The first number (53) is the download region ID, `Australia - VIC` in
+this example. The second number is the maximum number of servers to
+return.
+
+Here's the example respond:
+
+```
+
+"serverlist"
+{
+	"0"
+	{
+		"type"		"CS"
+		"sourceid"		"119"
+		"cell"		"52"
+		"load"		"72"
+		"weightedload"		"80"
+		"numentriesinclientlist"		"1"
+		"host" "10.0.0.194"
+		"vhost"		"valve5.steamcontent.com"
+	}
+	"1"
+	{
+		"type"		"CDN"
+		"vhost"		"cdn.edgecast.cs.steampowered.com"
+		"host" "10.0.0.194"
+		"load"		"0"
+		"weightedload"		"130"
+		"sourceid"		"32"
+		"numentriesinclientlist"		"2"
+	}
+}
+```
+
+
+There are two entries returned, since we asked for two in the request. The
+first entry is a `CS` entry, `valve5.steamcontent.com`. `steamcontent.com` is a new domain
+that Valve has just started using in the last few weeks. Some of these are
+owned by Valve, some are owned by ISPs. The distiction is irrelevant to us.
+It is part of cell 52 which is the `Australia - NSW` region. 
+
+The second entry is a `CDN` entry, `cdn.edgecast.cs.steampowered.com`. EdgeCast
+is a Content Distribution Network (CDN) which Valve uses to efficiently
+distribute data around the globe without needing to deploy their own infrastructure.
+
+Once the Steam client has a list of content servers, it makes an 
+`initsession` HTTP request, which is an authentication step and is not cached.
+It then downloads a manfiest file
+for each depot in the package. For example, if we were to download 
+[Swordy](), it has [one depot](https://steamdb.info/sub/71407/depots/). 
+All data for a depot lives in a folder beginning with `/depot/381301`,
+where the number is the depot ID - Swordy's only one in this case. 
+The manifest can be found at `/depot/381301/manifest/571621603566489671/5`
+
+The manifest lists all of the files for the depot. For example, one file
+from the above Swordy depot is `/depot/381301/chunk/914fc04dc7b3330544afb6ecde72bdfad003eabb`.
+Steam downloads and decrypts and/or decompresses, and boom - your game is downloaded.
+
+### Using this knowledge to run a cache
+
+If you were paying attention, you may have noticed in the server list response
+that each entry had two fields named `host` and `vhost`, and that `host` was
+set to an RFC1918 address, `10.0.0.194`. This is not what Steam returned to us
+ - in fact, this is how we've been running our Steam cache since [SteamPipe](https://developer.valvesoftware.com/wiki/SteamPipe)
+was first implemented in late 2012. 
+
+All traffic leaving our LAN goes via a
+transparent [Squid proxy](http://www.squid-cache.org/) which does not itself do any
+caching for Steam. Instead, we use Squid to rewrite the URL of requests that
+match the regex of `/\/serverlist\/(\d+)\/(\d+)\/` and redirect them to our own
+server list generator. 
+
+The rewriting is done using a [url_rewrite_program](http://www.squid-cache.org/Doc/config/url_rewrite_program/).
+The URL of every request is passed to this program and the program returns
+either the original URL if it's not a Steam serverlist request, or a URL
+that points to our cache if it is a serverlist. 
+
+Our own server list generator will receive the request. It takes an original
+genuine server list from Valve and replaces the `Host` field with the address
+of our own cache, before returning that to the Steam client.
+At present, it fetches the original upstream server list every
+time, but it could also cache the lists as they do not change regularly.
+
+Because the `vhost` field remains in tact, the Steam client will then make a
+HTTP request to our cache's address, but it will include in the HTTP headers
+a Host header, such as `Host: valve5.steamcontent.com`. This way, our cache
+server can easily identify where the request was meant to be sent to, so in
+a cache miss situation we can forward the request on with no issues.
+
+### And there it is
+
+And that's how Steam downloads your games! This alternative method of caching
+games has some extra complexity and overhead - it requires running a
+transparent proxy and has more moving parts, but it means you do not need
+to keep a list of DNS entries up to date. Isn't that lovely? 
+
+The scripts used to perform this magic haven't been released yet, but will be
+"soon". If you'd like a copy of them in their current state, get in touch
+via the links at the top of the page and we'll organise something. 
