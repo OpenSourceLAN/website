@@ -31,6 +31,5 @@ get in touch with us through one of the following means:
 
 * Email us at squid@opensourcelan.com
 * Join the [OpenSourceLAN Discord Server](https://discord.gg/0149LEvYPSzmnItKb)
-* Message the moderators on the [OSL Subreddit](http://www.reddit.com/r/opensourcelan)
-* Post in the OSL subreddit introduction post
-* Submit a merge request through Gitlab (note: public registration not open yet)
+* Message the moderators or post on the [OSL Subreddit](http://www.reddit.com/r/opensourcelan)
+* Submit a pull request or issue through [our GitHub organisation](https://github.com/OpenSourceLAN)
