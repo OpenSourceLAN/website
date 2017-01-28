@@ -7,8 +7,6 @@ sharing: true
 footer: true
 ---
 
-# As seen in
-
 Places where Open Source LAN software has been used. This list is made from places I've
 seen people mention it publically, or people who let us know they use it.
 
