@@ -6,6 +6,9 @@ comments: true
 categories: 
 ---
 
+**Update 2017-01-28**: I released a copy of the [tools run your steam cache in this manner](https://github.com/OpenSourceLAN/steam-hijack). Requires a Squid proxy, and a NodeJS application running somewhere.
+
+
 There are [a](https://github.com/bntjah/lancache/) [few](https://github.com/wolrah/lancache) [different](https://github.com/multiplay/lancache/) [implementations](https://github.com/ti-mo/ansible-lanparty) of the so called 'LAN Cache'. 
 All of these rely on DNS to have the Steam client connect to the cache. 
 
