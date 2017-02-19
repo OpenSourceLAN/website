@@ -6,6 +6,8 @@ comments: true
 categories: 
 ---
 
+**Updated 2017-02-19 to include build process optimisations**
+
 Over recent history, we've been updating our [gameservers-docker](https://github.com/OpenSourceLAN/gameservers-docker) repository with some useful dockerfiles. Many are still a work in progress, but all are usable. Let's take a walk through some examples to see the utility of this approach.
 
 
@@ -15,30 +17,36 @@ Get a game server with no effort.
 
 ```
 # Do these once to set up the image
-git clone https://github.com/OpenSourceLAN/gameservers-docker.git
-cd gameservers-docker/base
-./build.sh
-cd ../steamcmd
-./build.sh
-cd ../tf2
-./build.sh
-cd ../tf2-prophunt
-wget https://github.com/powerlord/sourcemod-prophunt/releases/download/maps/PHMapEssentialsBZ2.7z
-./build.sh
-cd ../
+git clone https://github.com/OpenSourceLAN/gameservers-docker.git .
 
-# Do this every time you need to start a new server
+# Download the prop hunt map packs (this is not auto-downloaded because
+# of its size and you may want a different map pack)
+wget --output-document tf2-prophunt/PHMapEssentialsBZ2.7z\
+ https://github.com/powerlord/sourcemod-prophunt/releases/download/maps/PHMapEssentialsBZ2.7z
+
+./build.sh tf2-prophunt
+
+# Do this every time you need to start an additional
 ./start_server tf2-prophunt
 ```
 
+Almost all resources are automatically downloaded (eg, steamcmd, sourcemod) and so
+no action is needed from you to download them. There are a handful of files that
+we chose not to auto-download for various reasons. The build scripts will not
+let you build without them, so you can't accidentally miss them.
 
 ### Building the image
 
 First we need to build our images. Let's build a TF2 prophunt image first.
 
 The images are built in a heirachy. `base` is the common ancestor of all of our images, so that comes first.
+If you try and build a descendant image and a dependency is not already built, the script will build it for you.
 
-All of the folders in the repository have a `build.sh` file. `cd` in to `base` and run `./build.sh`
+In this tutorial, we will do it the long and hard way so that you understand how it is structured.
+
+All of the folders in the repository have a `build.sh` file. `cd` in to `base` and run `./build.sh`. Alternatively,
+you can use `build.sh` in the root of the repository and pass an image name to the script as an argument.
+
 
 ```
 sirsquidness@squid ~/projects/gameservers-docker/base $ ./build.sh 
@@ -203,7 +211,8 @@ status
 hostname: TF2 Prophunt Server
 version : 3694595/24 3694595 secure
 ```
-Press ctrl+p, then ctrl+q to detach again. Don't press ctrl+c here! 
+Press ctrl+p, then ctrl+q to detach again. Don't press ctrl+c here! If you press ctrl+c,
+it will send the kill signal to the game server and it will shut down.
 
 Of course, that's not always convenient. So let's add an RCON password.
 
